@@ -1,5 +1,5 @@
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
 import os 
 from dotenv import load_dotenv
 from collections import defaultdict
@@ -18,6 +18,9 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
                                                client_secret=SPOTIFY_CLIENT_SECRET,
                                                redirect_uri=SPOTIFY_REDIRECT_URI,
                                                scope=scope))
+
+# sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID,
+#                                                            client_secret=SPOTIFY_CLIENT_SECRET))
 
 
 # Get current user
@@ -43,16 +46,46 @@ for uri in playlist_URIs:
     for track in sp.playlist_tracks(uri.split(":")[0])['items']:
         tracks[uri.split(":")[-1]].append(track['track']['name'])
 
+@click.command()
+# @click.option('i', '--input', help='Input to the CLI')
+def cli():
+    click.echo("Welcome to the Spotable CLI". center(50, "-"))
+    click.echo("What would you like to do:")
+
+    try:
+        click.echo("[1] Get all playlists of the current user")
+        click.echo("[2] Get tracks of a playlist")
+
+        choice = click.prompt("Enter your your choice: ", type=int)
+    
+        if choice == 1:
+            get_playlists()
+        elif choice == 2:
+            get_tracks()
+        
+        cli()
+    except:
+        click.echo("Invalid choice. Please try again.")
+
+
+@click.command()
+def get_playlists():
+    """Get the playlists of the current user"""
+    click.echo("Playlists:")
+    for playlist in playlist_URIs:
+        click.echo(playlist.split(":")[-1])
 
 
 @click.command()
 @click.option('--name', prompt='Enter the name of the playlist you want to see the tracks of', help='The name of the playlist')
-
 def get_tracks(name):
+    """Get the tracks of a playlist. Make sure to copy and paste the URL that you were redirected to after running the app."""
     click.echo(f"Tracks in {name}:")
     for track in tracks[name]:
         click.echo(track)
 
-if __name__ == '__main__':
-    get_tracks()
 
+
+
+if __name__ == '__main__':
+    cli()
