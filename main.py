@@ -18,8 +18,12 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
                                                scope=scope))
 
 
+# Get current user
+current_user = sp.me()["uri"].split(":")[-1]
+
+
 # Get the user's playlists
-playlists = sp.user_playlist(user='spotify')
+playlists = sp.user_playlists(user=current_user)
 while playlists:
     for i, playlist in enumerate(playlists['items']):
         print(f"{i + 1 + playlists['offset']:4d} {playlist['uri']} {playlist['name']}")
@@ -27,6 +31,9 @@ while playlists:
         playlists = sp.next(playlists)
     else:
         playlists = None
+
+print(playlists)
+
 
 
 
