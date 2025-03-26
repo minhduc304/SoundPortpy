@@ -86,6 +86,12 @@ def main():
             get_tracks()
             
         
+# def main():    
+#     while True:
+#         try:
+#            cli.main(standalone_mode=False)
+#         except click.exceptions.Abort:
+#            break 
 
 if __name__ == '__main__':
     main()
