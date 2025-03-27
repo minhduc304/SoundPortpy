@@ -6,46 +6,44 @@ from collections import defaultdict
 import click
 from tqdm import tqdm
 
-
 # Load environment variables
 load_dotenv()
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
 
-# Authenticate with Spotify
-scope = "playlist-read-private"
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
-                                            client_secret=SPOTIFY_CLIENT_SECRET,
-                                            redirect_uri=SPOTIFY_REDIRECT_URI,
-                                            scope=scope))
+def setup_auth():
+    # Authenticate with Spotify
+    scope = "playlist-read-private"
+    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
+                                                client_secret=SPOTIFY_CLIENT_SECRET,
+                                                redirect_uri=SPOTIFY_REDIRECT_URI,
+                                                scope=scope))
 
-# sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID,
-#                                                            client_secret=SPOTIFY_CLIENT_SECRET))
+    # Get current user
+    current_user = sp.me()['uri'].split(":")[-1]
+
+    return [sp, current_user]
+
+def setup_app(sp, current_user):
+    # Get the user's playlists
+    playlist_URIs =[]
+    playlists = sp.user_playlists(user=current_user)
+    while playlists:
+        for i, playlist in enumerate(playlists['items']):
+            # print(f"{i + 1 + playlists['offset']:4d} {playlist['uri']} {playlist['name']}")
+            playlist_URIs.append(playlist['uri'].split(':')[2] + ":" + playlist['name'])
+        if playlists['next']:
+            playlists = sp.next(playlists)
+        else:
+            playlists = None
 
 
-# Get current user
-current_user = sp.me()['uri'].split(":")[-1]
+    tracks = defaultdict(list)
 
-
-# Get the user's playlists
-playlist_URIs =[]
-playlists = sp.user_playlists(user=current_user)
-while playlists:
-    for i, playlist in enumerate(playlists['items']):
-        # print(f"{i + 1 + playlists['offset']:4d} {playlist['uri']} {playlist['name']}")
-        playlist_URIs.append(playlist['uri'].split(':')[2] + ":" + playlist['name'])
-    if playlists['next']:
-        playlists = sp.next(playlists)
-    else:
-        playlists = None
-
-
-tracks = defaultdict(list)
-
-for uri in tqdm(playlist_URIs):
-    for track in sp.playlist_tracks(uri.split(":")[0])['items']:
-        tracks[uri.split(":")[-1]].append(track['track']['name'])
+    for uri in tqdm(playlist_URIs):
+        for track in sp.playlist_tracks(uri.split(":")[0])['items']:
+            tracks[uri.split(":")[-1]].append(track['track']['name'])
 
 
 @click.group()
@@ -54,7 +52,7 @@ def cli():
     
 
 @cli.command()
-def get_playlists():
+def get_playlists(playlist_URIs):
     """Get the playlists of the current user"""
     click.echo("Here are your playlists:")
     for playlist in playlist_URIs:
@@ -63,27 +61,36 @@ def get_playlists():
 
 @cli.command()
 @click.option('--name', prompt='Enter the name of the playlist you want to see the tracks of', help='The name of the playlist')
-def get_tracks(name):
+def get_tracks(tracks, name):
     """Get the tracks of a playlist. Make sure to copy and paste the URL that you were redirected to after running the app."""
     click.echo(f"Tracks from {name}:")
     for track in tracks[name]:
         click.echo(track)
 
 def main():
-    click.echo("Welcome to the Spotable CLI". center(50, "-"))
+    click.echo("Welcome to the SoundPort CLI". center(50, "-"))
+    click.echo("If this is your first time using this app, you will be redirected to a webpage to authenticate with Spotify.")
+    click.echo("Copy and paste the URL you are redirected to in the terminal.")
+    click.echo("\n")
+    # click.echo("You have been authenticated successfully!")
+    # click.echo("Here are the commands you can use: ")   
+    # click.echo("get_playlists: Get all playlists of the current user")
+    # click.echo("get_tracks: Get tracks of a playlist")
+
+    sp, current_user = setup_auth()
+    playlist_URIs, tracks = setup_app(sp, current_user)
 
     value = click.prompt('What would you like to do: ', type=click.Choice(list(cli.commands.keys()) + ['exit']))
     click.echo('\n')
-    click.echo("get_playlists: Get all playlists of the current user")
-    click.echo("get_tracks: Get tracks of a playlist")
+    
     while value != 'exit':  
         cli.commands[value]()
     
         if value == 'get-playlists':
-            get_playlists()
+            get_playlists(playlist_URIs)
             
         elif value == 'get-tracks':
-            get_tracks()
+            get_tracks(tracks)
             
         
 # def main():    
