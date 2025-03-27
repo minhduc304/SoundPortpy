@@ -23,10 +23,14 @@ def setup_auth():
     # Get current user
     current_user = sp.me()['uri'].split(":")[-1]
 
-    return [sp, current_user]
+    result = [sp, current_user]
 
-def setup_app(sp, current_user):
+    return result
+
+def setup_app(auth):
     # Get the user's playlists
+    sp = auth[0]
+    current_user = auth[1]
     playlist_URIs =[]
     playlists = sp.user_playlists(user=current_user)
     while playlists:
@@ -44,6 +48,8 @@ def setup_app(sp, current_user):
     for uri in tqdm(playlist_URIs):
         for track in sp.playlist_tracks(uri.split(":")[0])['items']:
             tracks[uri.split(":")[-1]].append(track['track']['name'])
+
+    return playlist_URIs, tracks
 
 
 @click.group()
@@ -75,10 +81,9 @@ def main():
     # click.echo("You have been authenticated successfully!")
     # click.echo("Here are the commands you can use: ")   
     # click.echo("get_playlists: Get all playlists of the current user")
-    # click.echo("get_tracks: Get tracks of a playlist")
+    # click.echo("get_tracks: Get tracks of a playlist"))
 
-    sp, current_user = setup_auth()
-    playlist_URIs, tracks = setup_app(sp, current_user)
+    playlist_URIs, tracks = setup_app(setup_auth())
 
     value = click.prompt('What would you like to do: ', type=click.Choice(list(cli.commands.keys()) + ['exit']))
     click.echo('\n')
