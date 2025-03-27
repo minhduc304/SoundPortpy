@@ -1,10 +1,13 @@
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
+import spotipy 
+from spotipy.oauth2 import SpotifyOAuth 
 import os 
-from dotenv import load_dotenv
+from dotenv import load_dotenv 
 from collections import defaultdict
-import click
-from tqdm import tqdm
+import click 
+from tqdm import tqdm 
+from utils import capture_redirect
+
+
 
 # Load environment variables
 load_dotenv()
@@ -14,12 +17,14 @@ SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
 
 def setup_auth():
     # Authenticate with Spotify
-    scope = "playlist-read-private"
-    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
-                                                client_secret=SPOTIFY_CLIENT_SECRET,
-                                                redirect_uri=SPOTIFY_REDIRECT_URI,
-                                                scope=scope))
 
+    scope = "playlist-read-private"
+    auth_manager = SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
+                                client_secret=SPOTIFY_CLIENT_SECRET,
+                                redirect_uri=SPOTIFY_REDIRECT_URI,
+                                scope=scope)
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+    
     # Get current user
     current_user = sp.me()['uri'].split(":")[-1]
 
@@ -74,14 +79,45 @@ def get_tracks(tracks, name):
         click.echo(track)
 
 def main():
-    click.echo("Welcome to the SoundPort CLI". center(50, "-"))
-    click.echo("If this is your first time using this app, you will be redirected to a webpage to authenticate with Spotify.")
-    click.echo("Copy and paste the URL you are redirected to in the terminal.")
-    click.echo("\n")
-    # click.echo("You have been authenticated successfully!")
-    # click.echo("Here are the commands you can use: ")   
-    # click.echo("get_playlists: Get all playlists of the current user")
-    # click.echo("get_tracks: Get tracks of a playlist"))
+    # click.echo("Welcome to the SoundPort CLI". center(50, "-"))
+    # click.echo("If this is your first time using this app, you will be redirected to a webpage to authenticate with Spotify.")
+    # click.echo("Copy and paste the URL you are redirected to in the terminal.")
+    # click.echo("\n")
+    # # click.echo("You have been authenticated successfully!")
+    # # click.echo("Here are the commands you can use: ")   
+    # # click.echo("get_playlists: Get all playlists of the current user")
+    # # click.echo("get_tracks: Get tracks of a playlist"))
+
+    click.echo("""
+                                                                                                                        
+                                                          ,-.----.                                  
+  .--.--.                                                 \    /  \                         ___     
+ /  /    '.                                          ,---,|   :    \                      ,--.'|_   
+|  :  /`. /    ,---.           ,--,      ,---,     ,---.'||   |  .\ :   ,---.    __  ,-.  |  | :,'  
+;  |  |--`    '   ,'\        ,'_ /|  ,-+-. /  |    |   | :.   :  |: |  '   ,'\ ,' ,'/ /|  :  : ' :  
+|  :  ;_     /   /   |  .--. |  | : ,--.'|'   |    |   | ||   |   \ : /   /   |'  | |' |.;__,'  /   
+ \  \    `. .   ; ,. :,'_ /| :  . ||   |  ,"' |  ,--.__| ||   : .   /.   ; ,. :|  |   ,'|  |   |    
+  `----.   \'   | |: :|  ' | |  . .|   | /  | | /   ,'   |;   | |`-' '   | |: :'  :  /  :__,'| :    
+  __ \  \  |'   | .; :|  | ' |  | ||   | |  | |.   '  /  ||   | ;    '   | .; :|  | '     '  : |__  
+ /  /`--'  /|   :    |:  | : ;  ; ||   | |  |/ '   ; |:  |:   ' |    |   :    |;  : |     |  | '.'| 
+'--'.     /  \   \  / '  :  `--'   \   | |--'  |   | '/  ':   : :     \   \  / |  , ;     ;  :    ; 
+  `--'---'    `----'  :  ,      .-./   |/      |   :    :||   | :      `----'   ---'      |  ,   /  
+                       `--`----'   '---'        \   \  /  `---'.|                          ---`-'   
+                                                 `----'     `---`                                   
+                                                                                                    
+           
+    Welcome to the SoundPort CLI
+    If this is your first time using this app please reference the README 
+    in order to know how to obtain your Spotify API authentication. You will be redirected to a webpage after to authenticate with Spotify.
+    Copy and paste the URL you are redirected to in the terminal.
+
+    Otherwise, here are the commands you can use:
+    get_playlists: Get all playlists of the current user
+    get_tracks:    Get tracks of a playlist
+    exit:
+    """)
+    
+
 
     playlist_URIs, tracks = setup_app(setup_auth())
 
