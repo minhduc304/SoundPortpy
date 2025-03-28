@@ -2,12 +2,13 @@ import http.server
 import socketserver
 import threading
 import webbrowser
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+import os
 from urllib.parse import urlparse, parse_qs
-import queue
 
 class SpotifyAuthHandler(http.server.SimpleHTTPRequestHandler):
-    auth_queue = queue.Queue()
+    auth_code = None
     
     def do_GET(self):
         # Parse the query parameters
@@ -57,14 +58,40 @@ def get_spotify_auth_code(client_id, client_secret, redirect_uri, scope):
     # Open the authorization URL in the default web browser
     webbrowser.open(auth_url)
     
-    # Wait for the auth code from the queue with a timeout
-    try:
-        auth_code = SpotifyAuthHandler.auth_queue.get(timeout=120)  # 2-minute timeout
-        
-        # Get the access token using the captured authorization code
-        token_info = auth_manager.get_access_token(auth_code)
-        
-        return token_info
-    except queue.Empty:
-        print("Authentication timed out. Please try again.")
-        return None
+    # Wait until the auth code is captured
+    while SpotifyAuthHandler.auth_code is None:
+        pass
+    
+    # Get the access token using the captured authorization code
+    token_info = auth_manager.get_access_token(SpotifyAuthHandler.auth_code)
+    
+    return token_info
+
+def setup_auth():
+    """Modified authentication setup to use the new automatic auth method"""
+    scope = "playlist-read-private"
+    
+    # Load environment variables (ensure you have python-dotenv installed)
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
+    
+    # Get token info automatically
+    token_info = get_spotify_auth_code(client_id, client_secret, redirect_uri, scope)
+    
+    # Create Spotify client with the obtained token
+    auth_manager = SpotifyOAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=redirect_uri,
+        scope=scope
+    )
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+    
+    # Get current user
+    current_user = sp.me()['uri'].split(":")[-1]
+    
+    return [sp, current_user]

@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 from collections import defaultdict
 import click 
 from tqdm import tqdm 
-from utils import capture_redirect
+from utils.capture_redirect import get_spotify_auth_code
+import time 
 
 
 
@@ -16,21 +17,37 @@ SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
 
 def setup_auth():
-    # Authenticate with Spotify
+    """Authentication setup to capture redirect URL and get token info"""
 
+    # Load environment variables
     scope = "playlist-read-private"
-    auth_manager = SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
-                                client_secret=SPOTIFY_CLIENT_SECRET,
-                                redirect_uri=SPOTIFY_REDIRECT_URI,
-                                scope=scope)
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")    
+
+    # Get token info automatically
+    # token_info = get_spotify_auth_code(client_id, client_secret, redirect_uri, scope)
+
+    # if token_info is None:
+    #     raise Exception("Authentication failed")
+
+    # Create Spotify client with the obtained token
+    auth_manager = SpotifyOAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=redirect_uri,
+        scope=scope
+    )
+
     sp = spotipy.Spotify(auth_manager=auth_manager)
-    
+
     # Get current user
     current_user = sp.me()['uri'].split(":")[-1]
-
-    result = [sp, current_user]
-
-    return result
+    
+    return[sp, current_user]
 
 def setup_app(auth):
     # Get the user's playlists
@@ -79,14 +96,6 @@ def get_tracks(tracks, name):
         click.echo(track)
 
 def main():
-    # click.echo("Welcome to the SoundPort CLI". center(50, "-"))
-    # click.echo("If this is your first time using this app, you will be redirected to a webpage to authenticate with Spotify.")
-    # click.echo("Copy and paste the URL you are redirected to in the terminal.")
-    # click.echo("\n")
-    # # click.echo("You have been authenticated successfully!")
-    # # click.echo("Here are the commands you can use: ")   
-    # # click.echo("get_playlists: Get all playlists of the current user")
-    # # click.echo("get_tracks: Get tracks of a playlist"))
 
     click.echo("""
                                                                                                                         
@@ -117,8 +126,8 @@ def main():
     exit:
     """)
     
-
-
+    time.sleep(10)
+    # Setup authentication and app
     playlist_URIs, tracks = setup_app(setup_auth())
 
     value = click.prompt('What would you like to do: ', type=click.Choice(list(cli.commands.keys()) + ['exit']))
@@ -134,12 +143,5 @@ def main():
             get_tracks(tracks)
             
         
-# def main():    
-#     while True:
-#         try:
-#            cli.main(standalone_mode=False)
-#         except click.exceptions.Abort:
-#            break 
-~
 if __name__ == '__main__':
     main()
