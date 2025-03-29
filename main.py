@@ -10,12 +10,6 @@ import time
 
 
 
-# Load environment variables
-load_dotenv()
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
-SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
-
 def setup_auth():
     """Authentication setup to capture redirect URL and get token info"""
 
